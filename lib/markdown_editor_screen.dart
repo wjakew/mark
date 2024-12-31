@@ -73,6 +73,28 @@ class _MarkdownEditorScreenState extends State<MarkdownEditorScreen> {
   }
 
   Future<void> _saveMarkdownFile() async {
+    if (widget.initialText.isEmpty) {
+      // Show a message or dialog indicating that the text field is empty
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text('Empty Field'),
+            content: Text('Cannot save an empty file. Please enter some text.'),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop(); // Close the dialog
+                },
+                child: Text('OK'),
+              ),
+            ],
+          );
+        },
+      );
+      return; // Exit the function if the text is empty
+    }
+    
     // Check if a file is currently open
     if (_currentFilePath != null) {
       await File(_currentFilePath!).writeAsString(_controller.text); // Use controller's text
@@ -99,6 +121,7 @@ class _MarkdownEditorScreenState extends State<MarkdownEditorScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Color(0xFF4A171E),
       body: Row(
         children: [
           Expanded(
@@ -127,12 +150,24 @@ class _MarkdownEditorScreenState extends State<MarkdownEditorScreen> {
             Expanded(
               child: Container(
                 decoration: BoxDecoration(
-                  color: Colors.grey[850],
-                  borderRadius: BorderRadius.circular(25),
+                  color: Color(0xFF174A43),
                 ),
                 padding: const EdgeInsets.all(16.0),
-                child: Markdown(
-                  data: _text,
+                child: Column(
+                  children: [
+                    Text(
+                      'Live Preview',
+                      style: TextStyle(
+                        color: Colors.yellow,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    Markdown(
+                      data: _text,
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -141,7 +176,7 @@ class _MarkdownEditorScreenState extends State<MarkdownEditorScreen> {
       floatingActionButton: SpeedDial(
         icon: Icons.more_vert,
         activeIcon: Icons.close,
-        backgroundColor: Colors.purple,
+        backgroundColor: Color(0xFFFFF629),
         children: [
           SpeedDialChild(
             child: Icon(Icons.open_in_new),

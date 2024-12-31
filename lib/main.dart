@@ -8,6 +8,7 @@ import 'dart:typed_data'; // Import for Uint8List
 import 'package:file_picker/file_picker.dart'; // Import for file picking
 import 'package:path/path.dart' as path; // Use a prefix for path manipulation
 import 'markdown_editor_screen.dart'; // Import the new file
+import 'package:flutter/widgets.dart'; // Import for Image widget
 
 void main() {
   SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.light);
@@ -92,14 +93,23 @@ class _MarkdownEditorHomeState extends State<MarkdownEditorHome> with TickerProv
         context: context,
         builder: (BuildContext context) {
           return AlertDialog(
-            title: Text('Limit Reached'),
-            content: Text('You can only have a maximum of $_maxTabs open tabs.'),
+            title: Text(
+              'Limit Reached',
+              style: TextStyle(color: Color(0xFFF62929)),
+            ),
+            content: Text(
+              'You can only have a maximum of $_maxTabs open tabs.',
+              style: TextStyle(color: Color(0xFFF62929)),
+            ),
             actions: [
               TextButton(
                 onPressed: () {
                   Navigator.of(context).pop(); // Close the dialog
                 },
-                child: Text('OK'),
+                child: Text(
+                  'OK',
+                  style: TextStyle(color: Color(0xFFF62929)),
+                ),
               ),
             ],
           );
@@ -129,16 +139,30 @@ class _MarkdownEditorHomeState extends State<MarkdownEditorHome> with TickerProv
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('mark.'),
+        title: Row(
+          children: [
+            Image.asset(
+              'assets/logo.png', // Load the logo
+              height: AppBar().preferredSize.height, // Set height to AppBar height
+            )
+          ],
+        ),
+        backgroundColor: Color(0xFF4A171E),
         bottom: TabBar(
           controller: _tabController,
+          indicatorColor: Color(0xFFFFFF29),
+          labelColor: Color(0xFFFFFF29),
+          unselectedLabelColor: Colors.white,
           tabs: List.generate(_tabContents.length, (index) {
             return Tab(
               child: Row(
                 children: [
-                  Text('File ${index + 1}'),
+                  Text(
+                    'File ${index + 1}',
+                    style: TextStyle(color: Color(0xFFFFFF29)),
+                  ),
                   IconButton(
-                    icon: Icon(Icons.close, size: 16),
+                    icon: Icon(Icons.close, size: 16, color: Color(0xFFFFFF29)),
                     onPressed: () => _closeTab(index), // Close tab on button press
                   ),
                 ],
@@ -148,7 +172,7 @@ class _MarkdownEditorHomeState extends State<MarkdownEditorHome> with TickerProv
         ),
         actions: [
           IconButton(
-            icon: Icon(Icons.add),
+            icon: Icon(Icons.add, color: Color(0xFFFFFF29)),
             onPressed: _addNewTab,
           ),
         ],
