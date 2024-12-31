@@ -85,6 +85,23 @@ class _MarkdownEditorHomeState extends State<MarkdownEditorHome> with TickerProv
     });
   }
 
+  void _closeTab(int index) {
+    if (_tabContents.length > 1) { // Ensure at least one tab remains
+      setState(() {
+        _tabContents.removeAt(index); // Remove the content
+        if (_currentIndex >= index) {
+          _currentIndex = (_currentIndex > 0) ? _currentIndex - 1 : 0; // Adjust current index
+        }
+        _tabController = TabController(
+          length: _tabContents.length,
+          vsync: this,
+          initialIndex: _currentIndex,
+        );
+        _tabController.addListener(_handleTabChange);
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -92,7 +109,19 @@ class _MarkdownEditorHomeState extends State<MarkdownEditorHome> with TickerProv
         title: Text('mark.'),
         bottom: TabBar(
           controller: _tabController,
-          tabs: List.generate(_tabContents.length, (index) => Tab(text: 'Tab ${index + 1}')),
+          tabs: List.generate(_tabContents.length, (index) {
+            return Tab(
+              child: Row(
+                children: [
+                  Text('File ${index + 1}'),
+                  IconButton(
+                    icon: Icon(Icons.close, size: 16),
+                    onPressed: () => _closeTab(index), // Close tab on button press
+                  ),
+                ],
+              ),
+            );
+          }),
         ),
         actions: [
           IconButton(
