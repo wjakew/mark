@@ -8,23 +8,30 @@ class MarkdownEditorScreen extends StatefulWidget {
   final String initialText;
   final String? initialFilePath;
   final Function(String)? onTextChanged;
+  final VoidCallback? onCreateNewTab;
+  final Function(String)? onTabFocusLost;
 
   MarkdownEditorScreen({
     Key? key,
     this.initialText = '',
     this.initialFilePath,
     this.onTextChanged,
+    this.onCreateNewTab,
+    this.onTabFocusLost,
   }) : super(key: key);
 
   @override
-  _MarkdownEditorScreenState createState() => _MarkdownEditorScreenState();
+  MarkdownEditorScreenState createState() => MarkdownEditorScreenState();
 }
 
-class _MarkdownEditorScreenState extends State<MarkdownEditorScreen> {
+class MarkdownEditorScreenState extends State<MarkdownEditorScreen> with AutomaticKeepAliveClientMixin {
   late String _text;
   bool _isMarkdownVisible = false;
   String? _currentFilePath;
   final TextEditingController _controller = TextEditingController();
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
@@ -118,6 +125,10 @@ class _MarkdownEditorScreenState extends State<MarkdownEditorScreen> {
     }
   }
 
+  String getCurrentText() {
+    return _controller.text;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -133,8 +144,8 @@ class _MarkdownEditorScreenState extends State<MarkdownEditorScreen> {
                     child: SingleChildScrollView(
                       child: TextFormField(
                         controller: _controller,
-                        onChanged: _handleTextChange, // Use the new handler
-                        maxLines: null, // Allow unlimited lines
+                        onChanged: _handleTextChange,
+                        maxLines: null,
                         decoration: InputDecoration(
                           border: InputBorder.none,
                           hintText: 'write a story...',

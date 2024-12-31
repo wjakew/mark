@@ -36,22 +36,34 @@ class MarkdownEditorApp extends StatelessWidget {
   }
 }
 
+class _TabInfo {
+  final GlobalKey<MarkdownEditorScreenState> key;
+  final Widget widget;
+  String content;
+
+  _TabInfo({
+    required this.key,
+    required this.widget,
+    this.content = '',
+  });
+}
+
 class MarkdownEditorHome extends StatefulWidget {
   @override
   _MarkdownEditorHomeState createState() => _MarkdownEditorHomeState();
 }
 
 class _MarkdownEditorHomeState extends State<MarkdownEditorHome> with TickerProviderStateMixin {
+  List<_TabInfo> tabs = [];
   late TabController _tabController;
-  List<String> _tabContents = [''];
-  int _currentIndex = 0;
-  final int _maxTabs = 7; // Maximum number of tabs allowed
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 1, vsync: this);
-    _tabController.addListener(_handleTabChange);
+    _tabController = TabController(
+      length: 0,
+      vsync: this,
+    )..addListener(_handleTabChange);
   }
 
   @override
@@ -63,76 +75,57 @@ class _MarkdownEditorHomeState extends State<MarkdownEditorHome> with TickerProv
 
   void _handleTabChange() {
     if (!_tabController.indexIsChanging) {
-      setState(() {
-        _currentIndex = _tabController.index;
-      });
+      if (_tabController.previousIndex >= 0 && _tabController.previousIndex < tabs.length) {
+        final previousTab = tabs[_tabController.previousIndex];
+        previousTab.content = previousTab.key.currentState?.getCurrentText() ?? '';
+      }
     }
   }
 
-  void _updateTabContent(int index, String newContent) {
+  void _createNewTab() {
+    final key = GlobalKey<MarkdownEditorScreenState>();
     setState(() {
-      _tabContents[index] = newContent;
+      tabs.add(
+        _TabInfo(
+          key: key,
+          widget: MarkdownEditorScreen(
+            key: key,
+            initialText: '',
+            onTextChanged: (text) {
+              tabs[tabs.length - 1].content = text;
+            },
+            onCreateNewTab: _createNewTab,
+          ),
+        ),
+      );
+      _tabController = TabController(
+        length: tabs.length,
+        vsync: this,
+        initialIndex: tabs.length - 1,
+      )..addListener(_handleTabChange);
     });
   }
 
-  void _addNewTab() {
-    if (_tabContents.length < _maxTabs) {
-      setState(() {
-        _tabContents.add('');
-        _currentIndex = _tabContents.length - 1;
+  void _removeTab(int index) {
+    setState(() {
+      tabs.removeAt(index);
+      if (tabs.isEmpty) {
+        _tabController = TabController(length: 0, vsync: this);
+      } else {
         _tabController = TabController(
-          length: _tabContents.length,
+          length: tabs.length,
           vsync: this,
-          initialIndex: _currentIndex,
-        );
-        _tabController.addListener(_handleTabChange);
-      });
-    } else {
-      // Show dialog when trying to add more than the maximum allowed tabs
-      showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: Text(
-              'Limit Reached',
-              style: TextStyle(color: Color(0xFFF62929)),
-            ),
-            content: Text(
-              'You can only have a maximum of $_maxTabs open tabs.',
-              style: TextStyle(color: Color(0xFFF62929)),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop(); // Close the dialog
-                },
-                child: Text(
-                  'OK',
-                  style: TextStyle(color: Color(0xFFF62929)),
-                ),
-              ),
-            ],
-          );
-        },
-      );
-    }
+          initialIndex: index > 0 ? index - 1 : 0,
+        )..addListener(_handleTabChange);
+      }
+    });
   }
 
-  void _closeTab(int index) {
-    if (_tabContents.length > 1) { // Ensure at least one tab remains
-      setState(() {
-        _tabContents.removeAt(index); // Remove the content
-        if (_currentIndex >= index) {
-          _currentIndex = (_currentIndex > 0) ? _currentIndex - 1 : 0; // Adjust current index
-        }
-        _tabController = TabController(
-          length: _tabContents.length,
-          vsync: this,
-          initialIndex: _currentIndex,
-        );
-        _tabController.addListener(_handleTabChange);
-      });
-    }
+  void _deleteAllTabs() {
+    setState(() {
+      tabs.clear();
+      _tabController = TabController(length: 0, vsync: this);
+    });
   }
 
   @override
@@ -142,52 +135,75 @@ class _MarkdownEditorHomeState extends State<MarkdownEditorHome> with TickerProv
         title: Row(
           children: [
             Image.asset(
-              'assets/logo.png', // Load the logo
-              height: AppBar().preferredSize.height, // Set height to AppBar height
+              'assets/logo.png',
+              height: AppBar().preferredSize.height,
             )
           ],
         ),
         backgroundColor: Color(0xFF4A171E),
-        bottom: TabBar(
+        bottom: tabs.isEmpty ? null : TabBar(
           controller: _tabController,
           indicatorColor: Color(0xFFFFFF29),
           labelColor: Color(0xFFFFFF29),
           unselectedLabelColor: Colors.white,
-          tabs: List.generate(_tabContents.length, (index) {
-            return Tab(
+          tabs: List.generate(
+            tabs.length,
+            (index) => Tab(
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(
-                    'File ${index + 1}',
-                    style: TextStyle(color: Color(0xFFFFFF29)),
-                  ),
-                  IconButton(
-                    icon: Icon(Icons.close, size: 16, color: Color(0xFFFFFF29)),
-                    onPressed: () => _closeTab(index), // Close tab on button press
+                  Text('File ${index + 1}'),
+                  SizedBox(width: 8),
+                  InkWell(
+                    onTap: () => _removeTab(index),
+                    child: Icon(Icons.close, size: 16),
                   ),
                 ],
               ),
-            );
-          }),
+            ),
+          ),
         ),
         actions: [
-          IconButton(
-            icon: Icon(Icons.add, color: Color(0xFFFFFF29)),
-            onPressed: _addNewTab,
-          ),
+          if (tabs.isNotEmpty)
+            IconButton(
+              icon: Icon(Icons.add, color: Color(0xFFFFFF29)),
+              onPressed: _createNewTab,
+              tooltip: 'Add new tab',
+            ),
+          if (tabs.isNotEmpty)
+            IconButton(
+              icon: Icon(Icons.delete_sweep, color: Color(0xFFFFFF29)),
+              onPressed: _deleteAllTabs,
+              tooltip: 'Delete all tabs',
+            ),
         ],
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: List.generate(
-          _tabContents.length,
-          (index) => MarkdownEditorScreen(
-            key: ValueKey(index),
-            initialText: _tabContents[index],
-            onTextChanged: (text) => _updateTabContent(index, text),
-          ),
-        ),
-      ),
+      body: tabs.isEmpty
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  IconButton(
+                    icon: Icon(Icons.add_circle_outline),
+                    iconSize: 64,
+                    color: Colors.white,
+                    onPressed: _createNewTab,
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    'Create New Tab',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                    ),
+                  ),
+                ],
+              ),
+            )
+          : TabBarView(
+              controller: _tabController,
+              children: tabs.map((tab) => tab.widget).toList(),
+            ),
     );
   }
 }
