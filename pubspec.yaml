@@ -35,6 +35,7 @@ dependencies:
   path_provider: ^2.0.11 # Add this package for file path access
   file_saver: ^0.0.4 # Add this package for saving 
   file_picker: ^5.0.0
+  flutter_speed_dial: ^7.0.0
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
