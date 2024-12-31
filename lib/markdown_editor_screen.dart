@@ -106,13 +106,17 @@ class _MarkdownEditorScreenState extends State<MarkdownEditorScreen> {
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 children: [
-                  TextFormField(
-                    controller: _controller,
-                    onChanged: _handleTextChange, // Use the new handler
-                    maxLines: null,
-                    decoration: InputDecoration(
-                      border: InputBorder.none,
-                      hintText: 'write a story...',
+                  Expanded(
+                    child: SingleChildScrollView(
+                      child: TextFormField(
+                        controller: _controller,
+                        onChanged: _handleTextChange, // Use the new handler
+                        maxLines: null, // Allow unlimited lines
+                        decoration: InputDecoration(
+                          border: InputBorder.none,
+                          hintText: 'write a story...',
+                        ),
+                      ),
                     ),
                   ),
                 ],
