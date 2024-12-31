@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'dart:typed_data'; // Import for Uint8List
 import 'package:file_picker/file_picker.dart'; // Import for file picking
+import 'package:path/path.dart' as path; // Use a prefix for path manipulation
 
 void main() {
   SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.light);
@@ -39,87 +40,160 @@ class MarkdownEditorScreen extends StatefulWidget {
 
 class _MarkdownEditorScreenState extends State<MarkdownEditorScreen> {
   String _text = '';
-  bool _isMarkdownVisible = true;
+  bool _isMarkdownVisible = false;
+  String? _currentFilePath; // Variable to store the current file path
+  final TextEditingController _controller = TextEditingController(); // TextEditingController
 
-  Future<void> _saveMarkdownFile() async {
-    // Open file picker for user to select the file path and name
-    String? filePath = await FilePicker.platform.saveFile(
-      dialogTitle: 'Save Markdown File',
-      fileName: 'markdown_file.md',
-    );
+  @override
+  void initState() {
+    super.initState();
+    _controller.text = _text; // Initialize the controller with the current text
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose(); // Dispose of the controller
+    super.dispose();
+  }
+
+  Future<void> _openMarkdownFile() async {
+    // Open file picker for user to select a markdown file
+    String? filePath = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['md'],
+    ).then((result) => result?.files.single.path);
 
     if (filePath != null) {
-      await File(filePath).writeAsString(_text);
-      
-      Uint8List data = Uint8List.fromList(_text.codeUnits);
-      
-      await FileSaver.instance.saveFile('markdown_file.md', data, 'md');
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('File saved to $filePath')),
-      );
+      String fileContent = await File(filePath).readAsString();
+      setState(() {
+        _text = fileContent; // Load content into the text field
+        _currentFilePath = filePath; // Store the current file path
+        _controller.text = _text; // Update the controller's text
+      });
     }
   }
 
-  void _updateMarkdown(String newText) {
-    setState(() {
-      _text = newText;
-    });
+  Future<void> _saveMarkdownFile() async {
+    // Check if a file is currently open
+    if (_currentFilePath != null) {
+      await File(_currentFilePath!).writeAsString(_controller.text); // Use controller's text
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('File saved to $_currentFilePath')),
+      );
+    } else {
+      // Open file picker for user to select the file path and name
+      String? filePath = await FilePicker.platform.saveFile(
+        dialogTitle: 'Save Markdown File',
+        fileName: 'markdown_file.md',
+      );
+
+      if (filePath != null) {
+        await File(filePath).writeAsString(_controller.text); // Use controller's text
+        _currentFilePath = filePath; // Update current file path
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('File saved to $filePath')),
+        );
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('mark.'),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.save),
-            onPressed: _saveMarkdownFile,
-          ),
-          IconButton(
-            icon: Icon(_isMarkdownVisible ? Icons.visibility_off : Icons.visibility),
-            onPressed: () {
-              setState(() {
-                _isMarkdownVisible = !_isMarkdownVisible;
-              });
-            },
-          ),
-        ],
-      ),
-      body: Row(
-        children: [
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                children: [
-                  TextFormField(
-                    onChanged: _updateMarkdown,
-                    maxLines: null,
-                    decoration: InputDecoration(
-                      border: InputBorder.none,
-                      hintText: 'Enter your markdown text here...',
-                    ),
-                  ),
-                ],
+    return RawKeyboardListener(
+      focusNode: FocusNode(), // Create a focus node to listen for keyboard events
+      onKey: (RawKeyEvent event) {
+        if (event is RawKeyDownEvent && event.logicalKey == LogicalKeyboardKey.controlLeft) {
+          // Check if the 'O' key is pressed while holding 'Ctrl'
+          setState(() {
+            _isMarkdownVisible = !_isMarkdownVisible; // Toggle visibility
+          });
+        }
+      },
+      child: Scaffold(
+        appBar: PreferredSize(
+          preferredSize: Size.fromHeight(80.0), // Set the height of the AppBar
+          child: AppBar(
+            title: Text('mark.'),
+            actions: [
+              // Open Button
+              IconButton(
+                icon: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.open_in_browser), // Icon for opening files
+                    Text('Open'), // Text for the button
+                  ],
+                ),
+                onPressed: _openMarkdownFile, // Call the open function
               ),
-            ),
+              // Save Button
+              IconButton(
+                icon: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.save), // Icon for saving files
+                    Text('Save'), // Text for the button
+                  ],
+                ),
+                onPressed: _saveMarkdownFile,
+              ),
+              // Preview Button
+              IconButton(
+                icon: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(_isMarkdownVisible ? Icons.visibility_off : Icons.visibility), // Icon for preview
+                    Text('Preview'), // Text for the button
+                  ],
+                ),
+                onPressed: () {
+                  setState(() {
+                    _isMarkdownVisible = !_isMarkdownVisible;
+                  });
+                },
+              ),
+            ],
           ),
-          if (_isMarkdownVisible)
+        ),
+        body: Row(
+          children: [
             Expanded(
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.grey[850],
-                  borderRadius: BorderRadius.circular(25),
-                ),
+              child: Padding(
                 padding: const EdgeInsets.all(16.0),
-                child: Markdown(
-                  data: _text,
+                child: Column(
+                  children: [
+                    TextFormField(
+                      controller: _controller, // Use the controller
+                      onChanged: (newText) {
+                        setState(() {
+                          _text = newText; // Update _text when the text changes
+                        });
+                      },
+                      maxLines: null,
+                      decoration: InputDecoration(
+                        border: InputBorder.none,
+                        hintText: 'Enter your markdown text here...',
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
-        ],
+            if (_isMarkdownVisible)
+              Expanded(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.grey[850],
+                    borderRadius: BorderRadius.circular(25),
+                  ),
+                  padding: const EdgeInsets.all(16.0),
+                  child: Markdown(
+                    data: _text,
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
