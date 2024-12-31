@@ -20,41 +20,151 @@ class MarkdownEditorApp extends StatelessWidget {
       title: 'mark.',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        primarySwatch: Colors.blue,
+        primarySwatch: Colors.yellow,
         fontFamily: 'Courier',
       ),
       darkTheme: ThemeData(
         brightness: Brightness.dark,
-        primarySwatch: Colors.blue,
+        primarySwatch: Colors.yellow,
         fontFamily: 'Courier',
       ),
-      themeMode: ThemeMode.system,
-      home: MarkdownEditorScreen(),
+      themeMode: ThemeMode.dark,
+      home: MarkdownEditorHome(),
+    );
+  }
+}
+
+class MarkdownEditorHome extends StatefulWidget {
+  @override
+  _MarkdownEditorHomeState createState() => _MarkdownEditorHomeState();
+}
+
+class _MarkdownEditorHomeState extends State<MarkdownEditorHome> with TickerProviderStateMixin {
+  late TabController _tabController;
+  List<String> _tabContents = [''];
+  int _currentIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 1, vsync: this);
+    _tabController.addListener(_handleTabChange);
+  }
+
+  @override
+  void dispose() {
+    _tabController.removeListener(_handleTabChange);
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  void _handleTabChange() {
+    if (!_tabController.indexIsChanging) {
+      setState(() {
+        _currentIndex = _tabController.index;
+      });
+    }
+  }
+
+  void _updateTabContent(int index, String newContent) {
+    setState(() {
+      _tabContents[index] = newContent;
+    });
+  }
+
+  void _addNewTab() {
+    setState(() {
+      _tabContents.add('');
+      _currentIndex = _tabContents.length - 1;
+      _tabController = TabController(
+        length: _tabContents.length,
+        vsync: this,
+        initialIndex: _currentIndex,
+      );
+      _tabController.addListener(_handleTabChange);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('mark.'),
+        bottom: TabBar(
+          controller: _tabController,
+          tabs: List.generate(_tabContents.length, (index) => Tab(text: 'Tab ${index + 1}')),
+        ),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.add),
+            onPressed: _addNewTab,
+          ),
+        ],
+      ),
+      body: TabBarView(
+        controller: _tabController,
+        children: List.generate(
+          _tabContents.length,
+          (index) => MarkdownEditorScreen(
+            key: ValueKey(index),
+            initialText: _tabContents[index],
+            onTextChanged: (text) => _updateTabContent(index, text),
+          ),
+        ),
+      ),
     );
   }
 }
 
 class MarkdownEditorScreen extends StatefulWidget {
+  final String initialText;
+  final String? initialFilePath;
+  final Function(String)? onTextChanged;
+
+  MarkdownEditorScreen({
+    Key? key,
+    this.initialText = '',
+    this.initialFilePath,
+    this.onTextChanged,
+  }) : super(key: key);
+
   @override
   _MarkdownEditorScreenState createState() => _MarkdownEditorScreenState();
 }
 
 class _MarkdownEditorScreenState extends State<MarkdownEditorScreen> {
-  String _text = '';
+  late String _text;
   bool _isMarkdownVisible = false;
-  String? _currentFilePath; // Variable to store the current file path
-  final TextEditingController _controller = TextEditingController(); // TextEditingController
+  String? _currentFilePath;
+  final TextEditingController _controller = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    _controller.text = _text; // Initialize the controller with the current text
+    _text = widget.initialText;
+    _controller.text = _text;
+  }
+
+  @override
+  void didUpdateWidget(MarkdownEditorScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialText != oldWidget.initialText) {
+      _text = widget.initialText;
+      _controller.text = _text;
+    }
   }
 
   @override
   void dispose() {
-    _controller.dispose(); // Dispose of the controller
+    _controller.dispose();
     super.dispose();
+  }
+
+  void _handleTextChange(String newText) {
+    setState(() {
+      _text = newText;
+      widget.onTextChanged?.call(newText);
+    });
   }
 
   Future<void> _openMarkdownFile() async {
@@ -100,95 +210,77 @@ class _MarkdownEditorScreenState extends State<MarkdownEditorScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return RawKeyboardListener(
-      focusNode: FocusNode(), // Create a focus node to listen for keyboard events
-      onKey: (RawKeyEvent event) {
-        if (event is RawKeyDownEvent && event.logicalKey == LogicalKeyboardKey.controlLeft) {
-          // Check if the 'O' key is pressed while holding 'Ctrl'
-          setState(() {
-            _isMarkdownVisible = !_isMarkdownVisible; // Toggle visibility
-          });
-        }
-      },
-      child: Scaffold(
-        appBar: PreferredSize(
-          preferredSize: Size.fromHeight(80.0), // Set the height of the AppBar
-          child: AppBar(
-            title: Text('mark.'),
-            actions: [
-              // Dropdown Menu for Open, Save, and Preview
-              PopupMenuButton<String>(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Row(
-                    children: [
-                      Text('Actions'), // Label for the dropdown menu
-                      Icon(Icons.arrow_drop_down), // Dropdown icon
-                    ],
-                  ),
-                ),
-                onSelected: (value) {
-                  if (value == 'Open') {
-                    _openMarkdownFile();
-                  } else if (value == 'Save') {
-                    _saveMarkdownFile();
-                  } else if (value == 'Preview') {
-                    setState(() {
-                      _isMarkdownVisible = !_isMarkdownVisible; // Toggle visibility
-                    });
-                  }
-                },
-                itemBuilder: (BuildContext context) {
-                  return {'Open', 'Save', 'Preview'}.map((String choice) {
-                    return PopupMenuItem<String>(
-                      value: choice,
-                      child: Text(choice),
-                    );
-                  }).toList();
-                },
-              ),
-            ],
-          ),
-        ),
-        body: Row(
-          children: [
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  children: [
-                    TextFormField(
-                      controller: _controller, // Use the controller
-                      onChanged: (newText) {
-                        setState(() {
-                          _text = newText; // Update _text when the text changes
-                        });
-                      },
-                      maxLines: null,
-                      decoration: InputDecoration(
-                        border: InputBorder.none,
-                        hintText: 'Enter your markdown text here...',
-                      ),
+    return Scaffold(
+      body: Row(
+        children: [
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                children: [
+                  TextFormField(
+                    controller: _controller,
+                    onChanged: _handleTextChange, // Use the new handler
+                    maxLines: null,
+                    decoration: InputDecoration(
+                      border: InputBorder.none,
+                      hintText: 'Enter your markdown text here...',
                     ),
-                  ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (_isMarkdownVisible)
+            Expanded(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.grey[850],
+                  borderRadius: BorderRadius.circular(25),
+                ),
+                padding: const EdgeInsets.all(16.0),
+                child: Markdown(
+                  data: _text,
                 ),
               ),
             ),
-            if (_isMarkdownVisible)
-              Expanded(
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.grey[850],
-                    borderRadius: BorderRadius.circular(25),
-                  ),
-                  padding: const EdgeInsets.all(16.0),
-                  child: Markdown(
-                    data: _text,
-                  ),
-                ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          // Dropdown Menu for Open, Save, and Preview
+          showMenu(
+            context: context,
+            position: RelativeRect.fromLTRB(100, 100, 0, 0), // Adjust position as needed
+            items: [
+              PopupMenuItem<String>(
+                value: 'Open',
+                child: Text('Open'),
               ),
-          ],
-        ),
+              PopupMenuItem<String>(
+                value: 'Save',
+                child: Text('Save'),
+              ),
+              PopupMenuItem<String>(
+                value: 'Preview',
+                child: Text('Preview'),
+              ),
+            ],
+          ).then((value) {
+            if (value != null) {
+              if (value == 'Open') {
+                _openMarkdownFile();
+              } else if (value == 'Save') {
+                _saveMarkdownFile();
+              } else if (value == 'Preview') {
+                setState(() {
+                  _isMarkdownVisible = !_isMarkdownVisible; // Toggle visibility
+                });
+              }
+            }
+          });
+        },
+        child: Icon(Icons.more_vert), // Icon for the actions button
       ),
     );
   }
