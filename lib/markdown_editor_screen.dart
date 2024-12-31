@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:file_picker/file_picker.dart'; // Import for file picking
 import 'package:flutter_speed_dial/flutter_speed_dial.dart'; // Import the SpeedDial package
+import 'toolbox_dialog.dart'; // Import the ToolboxDialog
 
 class MarkdownEditorScreen extends StatefulWidget {
   final String initialText;
@@ -79,6 +80,24 @@ class MarkdownEditorScreenState extends State<MarkdownEditorScreen> with Automat
     }
   }
 
+  Future<void> _openToolbox() async {
+    // Open a new screen with the toolbox
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return ToolboxDialog(
+          onClose: () {
+            Navigator.of(context).pop(); // Close the dialog
+          },
+          onFormatText: (String format) {
+            // Implement the logic to format the selected text
+            // For example, you might want to insert the format around the selected text
+          },
+        );
+      },
+    );
+  }
+
   Future<void> _saveMarkdownFile() async {
     if (widget.initialText.isEmpty) {
       // Show a message or dialog indicating that the text field is empty
@@ -142,14 +161,23 @@ class MarkdownEditorScreenState extends State<MarkdownEditorScreen> with Automat
                 children: [
                   Expanded(
                     child: SingleChildScrollView(
-                      child: TextFormField(
-                        controller: _controller,
-                        onChanged: _handleTextChange,
-                        maxLines: null,
-                        decoration: InputDecoration(
-                          border: InputBorder.none,
-                          hintText: 'write a story...',
-                        ),
+                      child: Column(
+                        children: [
+                          TextFormField(
+                            controller: _controller,
+                            onChanged: _handleTextChange,
+                            maxLines: null,
+                            decoration: InputDecoration(
+                              border: InputBorder.none,
+                              hintText: 'write a story...',
+                            ),
+                          ),
+                          SizedBox(height: 8.0),
+                          Text(
+                            'Word Count: ${_text.split(RegExp(r'\s+')).where((word) => word.isNotEmpty).length}',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -177,23 +205,28 @@ class MarkdownEditorScreenState extends State<MarkdownEditorScreen> with Automat
         backgroundColor: Color(0xFFFFF629),
         children: [
           SpeedDialChild(
-            child: Icon(Icons.open_in_new),
+            child: Icon(Icons.open_in_new, color: Color(0xFFFFFF29)),
             label: 'Open',
             onTap: _openMarkdownFile,
           ),
           SpeedDialChild(
-            child: Icon(Icons.save),
+            child: Icon(Icons.save, color: Color(0xFFFFFF29)),
             label: 'Save',
             onTap: _saveMarkdownFile,
           ),
           SpeedDialChild(
-            child: Icon(Icons.remove_red_eye),
+            child: Icon(Icons.remove_red_eye, color: Color(0xFFFFFF29)),
             label: 'Preview',
             onTap: () {
               setState(() {
                 _isMarkdownVisible = !_isMarkdownVisible; // Toggle visibility
               });
             },
+          ),
+          SpeedDialChild(
+            child: Icon(Icons.handyman, color: Color(0xFFFFFF29)),
+            label: 'Toolbox',
+            onTap: _openToolbox,
           ),
         ],
       ),

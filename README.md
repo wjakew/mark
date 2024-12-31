@@ -4,6 +4,8 @@
 ## Description
 Mark is a Flutter project designed for editing markdown files. It allows users to create, edit, and save markdown files. 
 
+![screenshot1](readme_resources/screenshot1.png)
+
 ## Features
 
 - **Markdown Editing**: A text field that allows users to write and edit markdown content.
@@ -12,6 +14,9 @@ Mark is a Flutter project designed for editing markdown files. It allows users t
   - **Open Markdown File**: Users can open existing markdown files from their device.
   - **Save Markdown File**: Users can save their markdown content to a file on their device.
 - **User-Friendly Interface**: A clean and intuitive interface with a floating action button for easy access to file operations.
+- **Toolbox**: A toolbox that allows users to format their text.
+
+![screenshot2](readme_resources/screenshot2.png)
 
 ## Usage
 
