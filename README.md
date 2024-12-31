@@ -1,4 +1,4 @@
-# Mark
+# mark.
 
 ![logo](assets/logo.png)
 ## Description

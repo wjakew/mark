@@ -153,21 +153,8 @@ class _MarkdownEditorScreenState extends State<MarkdownEditorScreen> {
                   color: Color(0xFF174A43),
                 ),
                 padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  children: [
-                    Text(
-                      'Live Preview',
-                      style: TextStyle(
-                        color: Colors.yellow,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    Markdown(
-                      data: _text,
-                    ),
-                  ],
+                child: Markdown(
+                  data: _text,
                 ),
               ),
             ),
