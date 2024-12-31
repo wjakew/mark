@@ -18,6 +18,7 @@ class MarkdownEditorApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'mark.',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         primarySwatch: Colors.blue,
         fontFamily: 'Courier',
@@ -115,41 +116,35 @@ class _MarkdownEditorScreenState extends State<MarkdownEditorScreen> {
           child: AppBar(
             title: Text('mark.'),
             actions: [
-              // Open Button
-              IconButton(
-                icon: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.open_in_browser), // Icon for opening files
-                    Text('Open'), // Text for the button
-                  ],
+              // Dropdown Menu for Open, Save, and Preview
+              PopupMenuButton<String>(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Row(
+                    children: [
+                      Text('Actions'), // Label for the dropdown menu
+                      Icon(Icons.arrow_drop_down), // Dropdown icon
+                    ],
+                  ),
                 ),
-                onPressed: _openMarkdownFile, // Call the open function
-              ),
-              // Save Button
-              IconButton(
-                icon: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.save), // Icon for saving files
-                    Text('Save'), // Text for the button
-                  ],
-                ),
-                onPressed: _saveMarkdownFile,
-              ),
-              // Preview Button
-              IconButton(
-                icon: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(_isMarkdownVisible ? Icons.visibility_off : Icons.visibility), // Icon for preview
-                    Text('Preview'), // Text for the button
-                  ],
-                ),
-                onPressed: () {
-                  setState(() {
-                    _isMarkdownVisible = !_isMarkdownVisible;
-                  });
+                onSelected: (value) {
+                  if (value == 'Open') {
+                    _openMarkdownFile();
+                  } else if (value == 'Save') {
+                    _saveMarkdownFile();
+                  } else if (value == 'Preview') {
+                    setState(() {
+                      _isMarkdownVisible = !_isMarkdownVisible; // Toggle visibility
+                    });
+                  }
+                },
+                itemBuilder: (BuildContext context) {
+                  return {'Open', 'Save', 'Preview'}.map((String choice) {
+                    return PopupMenuItem<String>(
+                      value: choice,
+                      child: Text(choice),
+                    );
+                  }).toList();
                 },
               ),
             ],
