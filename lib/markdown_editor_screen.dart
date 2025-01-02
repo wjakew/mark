@@ -30,6 +30,7 @@ class MarkdownEditorScreenState extends State<MarkdownEditorScreen> with Automat
   bool _isMarkdownVisible = false;
   String? _currentFilePath;
   final TextEditingController _controller = TextEditingController();
+  String _currentText = '';
 
   @override
   bool get wantKeepAlive => true;
@@ -89,10 +90,7 @@ class MarkdownEditorScreenState extends State<MarkdownEditorScreen> with Automat
           onClose: () {
             Navigator.of(context).pop(); // Close the dialog
           },
-          onFormatText: (String format) {
-            // Implement the logic to format the selected text
-            // For example, you might want to insert the format around the selected text
-          },
+          onFormatText: _formatText,
         );
       },
     );
@@ -146,6 +144,14 @@ class MarkdownEditorScreenState extends State<MarkdownEditorScreen> with Automat
 
   String getCurrentText() {
     return _controller.text;
+  }
+
+  void _formatText(String format) {
+    setState(() {
+      _currentText += ' $format'; // Append a space before the formatting string
+      _controller.text = _currentText; // Update the controller's text
+      _controller.selection = TextSelection.fromPosition(TextPosition(offset: _controller.text.length)); // Move cursor to the end
+    });
   }
 
   @override
